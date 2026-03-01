@@ -1,7 +1,7 @@
 import kagglehub
 import joblib
-from pandas.api.types import is_numeric_dtype, is_bool_dtype
 import pandas as pd
+from pandas.api.types import is_numeric_dtype, is_bool_dtype
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
@@ -12,7 +12,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 
 def encode_df(df):
     df = df.fillna("None")
-    columns_to_drop = ["ID", "Early_Detection", "Treatment_Type", "Cancer_Stage", "Adenocarcinoma_Type", "Mortality_Rate", "Survival_Years"]
+    columns_to_drop = ["ID", "Country", "Early_Detection", "Treatment_Type", "Cancer_Stage", "Adenocarcinoma_Type", "Mortality_Rate", "Survival_Years"]
     cleaned = df.drop(columns=columns_to_drop)
     encoding_cols = [col for col in cleaned.columns if not is_numeric_dtype(df[col]) and len(cleaned[col].value_counts()) > 2]
     one_hot_encoded = pd.get_dummies(cleaned, columns=encoding_cols, drop_first=True)
@@ -28,7 +28,7 @@ def encode_df(df):
 def trainer():
     path = kagglehub.dataset_download("aizahzeeshan/lung-cancer-risk-in-25-countries")
     df = pd.read_csv(path + "/lung_cancer_prediction_dataset.csv")
-
+    df = df[df['Country'] == 'USA']
 
     processed_df = encode_df(df) #function defined above
     cancer_df = processed_df[processed_df['Lung_Cancer_Diagnosis'] == 1]
@@ -36,7 +36,7 @@ def trainer():
     healthy_sample = healthy_df.sample(n=len(cancer_df), random_state=42)
     balanced_df = pd.concat([cancer_df, healthy_sample])
 
-    X = balanced_df.drop(columns=["Lung_Cancer_Diagnosis", "Healthcare_Access", "Country_China"])
+    X = balanced_df.drop(columns=["Lung_Cancer_Diagnosis", "Healthcare_Access"])
     y = balanced_df["Lung_Cancer_Diagnosis"]
 
     # Split & Train (Using Random Forest with Balanced Weights)
