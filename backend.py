@@ -6,17 +6,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
 
-#----- load in data ------
-
-def load():
-    # Download latest version
-    path = kagglehub.dataset_download("aizahzeeshan/lung-cancer-risk-in-25-countries")
-
-    print("Path to dataset files:", path)
-
-
-
-
 
 
 #----- encode data ------
@@ -41,9 +30,14 @@ def trainer():
     df = pd.read_csv(path + "/lung_cancer_prediction_dataset.csv")
 
 
-    mldf = encode_df(df) #function defined above
-    X = mldf.drop(columns=['Lung_Cancer_Diagnosis'])
-    y = mldf['Lung_Cancer_Diagnosis']
+    processed_df = encode_df(df) #function defined above
+    cancer_df = processed_df[processed_df['Lung_Cancer_Diagnosis'] == 1]
+    healthy_df = processed_df[processed_df['Lung_Cancer_Diagnosis'] == 0]
+    healthy_sample = healthy_df.sample(n=len(cancer_df), random_state=42)
+    balanced_df = pd.concat([cancer_df, healthy_sample])
+
+    X = balanced_df.drop(columns=["Lung_Cancer_Diagnosis", "Healthcare_Access", "Country_China"])
+    y = balanced_df["Lung_Cancer_Diagnosis"]
 
     # Split & Train (Using Random Forest with Balanced Weights)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
