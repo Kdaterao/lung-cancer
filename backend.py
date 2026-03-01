@@ -22,33 +22,18 @@ def load():
 #----- encode data ------
 
 def encode_df(df):
-  # fill missing values
-  df = df.fillna("None")
-
-  # drop irrelavent or redundant columns
-  columns_to_drop = ["ID", "Early_Detection", "Treatment_Type", "Cancer_Stage", "Adenocarcinoma_Type", "Mortality_Rate", "Survival_Years"]
-  cleaned = df.drop(columns=columns_to_drop)
-
-  # determine which columns can be one-hot encoded
-  encoding_cols = []
-  for col in cleaned.columns:
-    # only convert non-numeric, non-binary columns
-    if not is_numeric_dtype(df[col]) and len(cleaned[col].value_counts()) > 2:
-      encoding_cols.append(col)
-
-  # perform one hot encoding
-  one_hot_encoded = pd.get_dummies(cleaned, columns=encoding_cols, drop_first=True)
-
-  # convert binary categorical values columns, not numeric columns
-  for col in one_hot_encoded.columns:
-    if not is_numeric_dtype(one_hot_encoded[col]):
-      labels, uniques = pd.factorize(one_hot_encoded[col])
-      one_hot_encoded[col] = labels
-
-    if is_bool_dtype(one_hot_encoded[col]):
-          one_hot_encoded[col] = one_hot_encoded[col].astype(int)
-
-  return one_hot_encoded
+    df = df.fillna("None")
+    columns_to_drop = ["ID", "Early_Detection", "Treatment_Type", "Cancer_Stage", "Adenocarcinoma_Type", "Mortality_Rate", "Survival_Years"]
+    cleaned = df.drop(columns=columns_to_drop)
+    encoding_cols = [col for col in cleaned.columns if not is_numeric_dtype(df[col]) and len(cleaned[col].value_counts()) > 2]
+    one_hot_encoded = pd.get_dummies(cleaned, columns=encoding_cols, drop_first=True)
+    for col in one_hot_encoded.columns:
+        if not is_numeric_dtype(one_hot_encoded[col]):
+            labels, uniques = pd.factorize(one_hot_encoded[col])
+            one_hot_encoded[col] = labels
+        if is_bool_dtype(one_hot_encoded[col]):
+            one_hot_encoded[col] = one_hot_encoded[col].astype(int)
+    return one_hot_encoded
 
 
 def trainer():
@@ -71,24 +56,43 @@ def trainer():
 
 
 
-def predict(user_input, model, model_columns):
+def predict(user_input, model, model_columns, threshold=0.15):
+    """
+    Predict lung cancer risk for a single patient.
 
+    Parameters:
+    - user_input: dict of patient features
+    - model: trained classifier (RandomForest or similar)
+    - model_columns: list of columns used in training
+    - threshold: probability above which risk is considered 'High'
+
+    Returns:
+    - dict with prediction label, probability, and recommendation
+    """
 
     # Convert user input into a DataFrame and align with training columns
     input_vector = pd.DataFrame([user_input])
     input_vector = input_vector.reindex(columns=model_columns, fill_value=0)
 
-    # Make prediction
-    pred_class = model.predict(input_vector)[0]
+    # Predict probability
     pred_prob = model.predict_proba(input_vector)[0][1]  # Probability of Class 1
+
+    # Determine risk label
+    risk_label = "High" if pred_prob >= threshold else "Low"
+
+    # Recommendation based on risk
+    recommendation = (
+        "REFER FOR LOW-DOSE CT SCREENING" if risk_label == "High"
+        else "MONITOR & RE-EVALUATE ANNUALLY"
+    )
 
     # Create human-readable result
     result = {
-        "prediction": "LUNG CANCER DETECTED" if pred_class == 1 else "No Cancer Detected",
-        "probability": round(pred_prob, 4)  # Probability as float (0–1)
+        "prediction": risk_label,
+        "probability": round(pred_prob, 4),  # Probability as float (0–1)
+        "recommendation": recommendation
     }
 
     return result
-
 
 
