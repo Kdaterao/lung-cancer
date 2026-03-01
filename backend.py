@@ -44,11 +44,10 @@ def trainer():
     rf_model = RandomForestClassifier(n_estimators=100, random_state=42, class_weight="balanced")
     rf_model.fit(X_train, y_train)
 
-    print("Model Trained Successfully.\n")
-
     joblib.dump(rf_model, "rf_model.pkl")
+    joblib.dump(list(X.columns), "model_columns.pkl")
 
-
+    print("Model Trained Successfully.\n")
 
 def predict(user_input, model, model_columns, threshold=0.15):
     """
