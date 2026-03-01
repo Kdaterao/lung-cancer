@@ -38,6 +38,6 @@ Standard AI models use a 0.50 certainty threshold. LungShield AI uses a **0.15 t
 ## Team: Group 08
 * **Sai Chekka**
 * **Krish Daterao**
+* **Gurmehar Arora**
 
----
 *Developed for the BITS x IBM Datathon 2026.*
